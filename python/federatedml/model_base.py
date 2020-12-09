@@ -81,6 +81,9 @@ class ModelBase(object):
         self.component_properties.need_run = need_run
 
     def run(self, component_parameters=None, args=None):
+        """
+        args指输入的data、model
+        """
         self._init_runtime_parameters(component_parameters)
         self.component_properties.parse_dsl_args(args)
 
