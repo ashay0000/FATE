@@ -21,7 +21,7 @@ import numpy as np
 
 from federatedml.model_base import ModelBase
 from federatedml.param.str_transform_param import StrTransformParam
-from federatedml.protobuf.generated import onehot_param_pb2, onehot_meta_pb2   # todo
+from federatedml.protobuf.generated import trans_param_pb2, trans_meta_pb2
 from federatedml.statistic.data_overview import get_header
 from federatedml.util import LOGGER
 from federatedml.util import abnormal_detection
@@ -91,8 +91,15 @@ class TransferPair(object):
         self._transformed_map[value] = len(self._transformed_map)
 
     @property
+    def transformed_map(self):
+        return self._transformed_map
+
+    @property
     def values(self):
         return list(self._values)
+
+    def set_transformed_map(self,map):
+        self._transformed_map = map
 
 
 class StrTransform(ModelBase):
@@ -217,45 +224,35 @@ class StrTransform(ModelBase):
     @staticmethod
     def transfer_one_instance(instance, col_maps, inner_param):
         feature = instance.features
-        result_header = inner_param.result_header
-        # new_feature = [0 for _ in result_header]
         _transformed_value = {}
 
         for idx, col_name in enumerate(inner_param.header):
             value = feature[idx]
             if col_name not in col_maps:
-                _transformed_value[col_name] = value
+                pass
             else:
                 pair_obj = col_maps.get(col_name)
-                new_col_name = pair_obj.query_name_by_value(value)
-                if new_col_name is None:
-                    continue
-                _transformed_value[new_col_name] = 1
+                feature[idx] = pair_obj.transformed_map[value]
 
-        new_feature = [_transformed_value[x] if x in _transformed_value else 0 for x in result_header]
-
-        feature_array = np.array(new_feature, dtype='float64')
-        instance.features = feature_array
+        instance.features = feature
         return instance
 
     def set_schema(self, data_instance):
         data_instance.schema = self.schema
 
     def _get_meta(self):
-        meta_protobuf_obj = onehot_meta_pb2.OneHotMeta(transform_col_names=self.inner_param.transform_names,
+        meta_protobuf_obj = trans_meta_pb2.TransMeta(transform_col_names=self.inner_param.transform_names,
                                                        header=self.inner_param.header,
                                                        need_run=self.need_run)
         return meta_protobuf_obj
 
-    def _get_param(self):  # todo
+    def _get_param(self):
         pb_dict = {}
         for col_name, pair_obj in self.col_maps.items():
-            values = [str(x) for x in pair_obj.values]
-            value_dict_obj = onehot_param_pb2.ColsMap(values=values,
-                                                      transformed_headers=pair_obj.transformed_headers)
+            value_dict_obj = trans_param_pb2.TransColsMap(transformed_map=pair_obj.transformed_map)
             pb_dict[col_name] = value_dict_obj
 
-        result_obj = onehot_param_pb2.OneHotParam(col_map=pb_dict)
+        result_obj = trans_param_pb2.TransParam(col_map=pb_dict)
         return result_obj
 
     def export_model(self):
@@ -272,7 +269,7 @@ class StrTransform(ModelBase):
         }
         return result
 
-    def load_model(self, model_dict):  # todo
+    def load_model(self, model_dict):
         self._parse_need_run(model_dict, MODEL_META_NAME)
         model_param = list(model_dict.get('model').values())[0].get(MODEL_PARAM_NAME)
         model_meta = list(model_dict.get('model').values())[0].get(MODEL_META_NAME)
@@ -286,12 +283,6 @@ class StrTransform(ModelBase):
         self.inner_param.set_header(list(model_meta.header))
         self.inner_param.add_transform_names(list(model_meta.transform_col_names))
 
-        col_maps = dict(model_param.col_map)
-        self.col_maps = {}
-        for col_name, cols_map_obj in col_maps.items():
-            if col_name not in self.col_maps:
-                self.col_maps[col_name] = TransferPair(col_name)
-            pair_obj = self.col_maps[col_name]
-            for feature_value in list(cols_map_obj.values):
-                pair_obj.add_value(eval(feature_value))
-
+        for k, v in dict(model_param.col_map).items():
+            self.col_maps[k] = TransferPair(k)
+            self.col_maps[k].set_transformed_map(dict(v.transformed_map))
