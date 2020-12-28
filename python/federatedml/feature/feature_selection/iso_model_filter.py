@@ -30,7 +30,7 @@ from federatedml.util import consts
 from federatedml.util import fate_operator
 from federatedml.util import anonymous_generator
 from federatedml.util.component_properties import ComponentProperties
-
+from federatedml.util.pearson_calculate import PearsonCalculate,PearsonFilter
 
 class IsoModelFilter(BaseFilterMethod):
 
@@ -80,7 +80,9 @@ class IsoModelFilter(BaseFilterMethod):
         filter_type = self.filter_type
         take_high = self.take_high
         threshold = self.threshold
-        if filter_type == "threshold":
+        if filter_type == 'pearson':
+            results = self._pearson_fit(data_instances, all_feature_values, threshold)
+        elif filter_type == "threshold":
             results = self._threshold_fit(all_feature_values, threshold, take_high)
         elif filter_type == "top_k":
             results = self._top_k_fit(all_feature_values, threshold, take_high)
@@ -95,6 +97,13 @@ class IsoModelFilter(BaseFilterMethod):
         self._keep_one_feature(pick_high=take_high)
 
         return self
+
+    def _pearson_fit(self, data_instances, values, threshold):
+        cal = PearsonCalculate()
+        cor = cal.fit(data_instances)
+        pf = PearsonFilter(cor['local_corr'], values, threshold)
+        result = pf.fit()
+        return result
 
     def _threshold_fit(self, values, threshold, take_high):
         result = []

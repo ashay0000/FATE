@@ -22,6 +22,24 @@ from federatedml.param.base_param import BaseParam
 from federatedml.util import consts
 
 
+class PearsonFilterParam(BaseParam):
+    """
+    Use the Pearson correlation coefficient to judge.
+
+    Parameters
+    ----------
+    threshold: float, default: 0.9
+    """
+
+    def __init__(self, threshold=0.9):
+        self.threshold = threshold
+
+    def check(self):
+        descr = "Pearson Filter param's"
+        self.check_open_unit_interval(self.threshold, descr)
+        return True
+
+
 class UniqueValueParam(BaseParam):
     """
     Use the difference between max-value and min-value to judge.
@@ -234,9 +252,9 @@ class CommonFilterParam(BaseParam):
                     setattr(self, value_name, new_v)
 
         for v in self.filter_type:
-            if v not in ["threshold", "top_k", "top_percentile"]:
+            if v not in ["threshold", "top_k", "top_percentile", 'pearson']:
                 raise ValueError('filter_type should be one of '
-                                 '"threshold", "top_k", "top_percentile"')
+                                 '"threshold", "top_k", "top_percentile","pearson"')
 
         descr = "hetero feature selection param's"
         for v in self.take_high:
@@ -410,6 +428,7 @@ class FeatureSelectionParam(BaseParam):
                  psi_param=CommonFilterParam(metrics=consts.PSI,
                                              take_high=False),
                  sbt_param=CommonFilterParam(metrics=consts.FEATURE_IMPORTANCE),
+                 pearson_param=PearsonFilterParam(),
                  need_run=True
                  ):
         super(FeatureSelectionParam, self).__init__()
@@ -437,6 +456,7 @@ class FeatureSelectionParam(BaseParam):
         self.statistic_param = copy.deepcopy(statistic_param)
         self.psi_param = copy.deepcopy(psi_param)
         self.sbt_param = copy.deepcopy(sbt_param)
+        self.pearson_param = copy.deepcopy(pearson_param)
         self.need_run = need_run
 
     def check(self):
@@ -451,7 +471,7 @@ class FeatureSelectionParam(BaseParam):
                                                    consts.MANUALLY_FILTER, consts.PERCENTAGE_VALUE,
                                                    consts.IV_FILTER, consts.STATISTIC_FILTER, consts.IV_TOP_K,
                                                    consts.PSI_FILTER, consts.HETERO_SBT_FILTER,
-                                                   consts.HOMO_SBT_FILTER, consts.HETERO_FAST_SBT_FILTER])
+                                                   consts.HOMO_SBT_FILTER, consts.HETERO_FAST_SBT_FILTER, consts.PEARSON])
 
             self.filter_methods[idx] = method
 
@@ -490,3 +510,5 @@ class FeatureSelectionParam(BaseParam):
         for m in self.sbt_param.metrics:
             if m != consts.FEATURE_IMPORTANCE:
                 raise ValueError("For SBT filter, metrics should be 'feature_importance'")
+
+        self.pearson_param.check()

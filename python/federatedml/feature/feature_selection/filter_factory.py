@@ -54,6 +54,20 @@ def get_filter(filter_name, model_param: FeatureSelectionParam, role=consts.GUES
             raise ValueError("None of statistic model has provided when using unique filter")
         return IsoModelFilter(new_param, iso_model)
 
+    elif filter_name == consts.PEARSON:
+        pearson_param = model_param.pearson_param
+        new_param = feature_selection_param.CommonFilterParam(
+            metrics=consts.IV,
+            filter_type='pearson',
+            take_high=True,
+            threshold=pearson_param.threshold
+        )
+        iso_model = model.isometric_models.get(consts.BINNING_MODEL)
+        new_param.check()
+        if iso_model is None:
+            raise ValueError("None of binning model has provided when using pearson filter")
+        return IsoModelFilter(new_param, iso_model)
+
     elif filter_name == consts.IV_VALUE_THRES:
         iv_value_param = model_param.iv_value_param
         iv_param = feature_selection_param.CommonFilterParam(

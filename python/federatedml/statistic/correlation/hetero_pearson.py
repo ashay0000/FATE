@@ -103,8 +103,12 @@ class HeteroPearson(ModelBase):
         n = data.count()
         sum_x, sum_square_x = data.mapValues(lambda x: (x, x ** 2)) \
             .reduce(lambda pair1, pair2: (pair1[0] + pair2[0], pair1[1] + pair2[1]))
-        mu = sum_x / n
-        sigma = np.sqrt(sum_square_x / n - mu ** 2)
+        #
+        sum_x = sum_x.astype('float')
+        sum_square_x = sum_square_x.astype('float')
+        # 原本输出结果为object类型 导致此处报错 具体原因待调研
+        mu = sum_x / n  # 平均数
+        sigma = np.sqrt(sum_square_x / n - mu ** 2)  # 标准差
         if (sigma <= 0).any():
             raise ValueError(f"zero standard deviation detected, sigma={sigma}")
         return n, data.mapValues(lambda x: (x - mu) / sigma)

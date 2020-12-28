@@ -93,6 +93,10 @@ class BinColResults(object):
         self.iv = iv_obj.iv
 
     def generate_pb(self):
+        #
+        self.event_count_array = [int(x) for x in self.event_count_array]
+        self.non_event_count_array = [int(x) for x in self.non_event_count_array]
+        # 存在生成为float的bug 原因待确认，先在此修复为int
         result = feature_binning_param_pb2.IVParam(woe_array=self.woe_array,
                                                    iv_array=self.iv_array,
                                                    event_count_array=self.event_count_array,
