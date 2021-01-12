@@ -188,7 +188,7 @@ class StrTransform(ModelBase):
         for col_name in inner_param.transform_names:
             col_maps[col_name] = TransferPair(col_name)
 
-        for _, instance in data:
+        for _, instance in data:  # 只是一行数据 所以下面的feature_value有具体的数据类型
             feature = instance.features
             for col_idx, col_name in zip(inner_param.transform_indexes, inner_param.transform_names):
                 pair_obj = col_maps.get(col_name)
@@ -196,7 +196,7 @@ class StrTransform(ModelBase):
                 if not isinstance(feature_value, str):
                     feature_value = math.ceil(feature_value)
                     if feature_value != feature[col_idx]:
-                        raise ValueError("Onehot input data support integer or string only")
+                        raise ValueError("Onehot input data support integer or string only but {}".format(col_name))
                 pair_obj.add_value(feature_value)
         return col_maps
 

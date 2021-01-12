@@ -40,7 +40,7 @@ class PearsonCalculate:
         # 原本输出结果为object类型 导致此处报错 具体原因待调研
         mu = sum_x / n  # 平均数
         sigma = np.sqrt(sum_square_x / n - mu ** 2)  # 标准差
-        if (sigma <= 0).any():
+        if (sigma <= 0).any():  # 等于零的问题有待调研
             raise ValueError(f"zero standard deviation detected, sigma={sigma}")
         return n, data.mapValues(lambda x: (x - mu) / sigma)
 
